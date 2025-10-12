@@ -1,3 +1,6 @@
+#include <string>
+using namespace std;
+
 // Creamos el nodo de lista
 // Cada ficha tiene 2 números
 struct Ficha
@@ -17,6 +20,21 @@ struct ListaFicha
 {
     NodoFicha *cabeza;// Apunta al primer nodo
 };
+
+struct Jugador
+{
+    string nombre;
+    ListaFicha mano; //Lista dinámica con sus fichas
+    int puntos;
+};
+
+struct Juego
+{
+    Jugador Jugadores[4];//Maximo 4 jugadores
+    int numJugadores;
+    ListaFicha pozo; // fichas no repartidas
+};
+
 
 
 //Creamos un ficha
@@ -55,5 +73,16 @@ void generarFichas(ListaFicha &lista){
         }
     }
 
+}
+
+// Contamos de las fichas 
+int contarFichas(ListaFicha lista){
+    int contador = 0;
+    NodoFicha *actual = lista.cabeza;
+    while(actual != nullptr){
+        contador ++;
+        actual = actual -> siguiente;
+    }
+    return contador;
 }
 
