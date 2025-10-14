@@ -2,230 +2,175 @@
 #include "funciones.h"
 #include <cstdlib>
 #include <ctime>
-using namespace std;  
+using namespace std;
 
-// Mostramos la fichas
-void mostarLista(ListaFicha lista){
-    NodoFicha *aux = lista.cabeza;
-    while(aux != NULL){
-        cout << "[" << aux -> dato.lado1 <<"|"<< aux -> dato.lado2 << "] ";
-        aux = aux -> siguiente;
+// Muestra todas las fichas de una pila (mano de jugador)
+void mostrarFichasPila(pilasFicha pila) {
+    NodoFicha *actual = pila.tope;
+    
+    if (actual == nullptr) {
+        cout << "No hay fichas";
+        return;
     }
-    cout << endl;
+    
+    while (actual != nullptr) {
+        cout << "[" << actual->ficha.lado1 << "|" << actual->ficha.lado2 << "] ";
+        actual = actual->siguiente;
+    }
 }
 
-// Mostrar mano en pirámide centrada
-void mostrarManoPiramideCentrada(ListaFicha mano, string nombreJugador) {
-    cout << "\n=== " << nombreJugador << " ===" << endl;
+// Muestra todas las fichas de una cola (pozo)
+void mostrarFichasCola(colaFicha cola) {
+    NodoFicha *actual = cola.frente;
     
-    NodoFicha* actual = mano.cabeza;
+    if (actual == nullptr) {
+        cout << "El pozo está vacío";
+        return;
+    }
+    
+    while (actual != nullptr) {
+        cout << "[" << actual->ficha.lado1 << "|" << actual->ficha.lado2 << "] ";
+        actual = actual->siguiente;
+    }
+}
+
+// Muestra la mano de un jugador en forma de pirámide
+void mostrarManoConEstilo(pilasFicha mano, string nombreJugador) {
+    cout << "\n--- " << nombreJugador << " ---" << endl;
+    
+    NodoFicha* fichaActual = mano.tope;
     int fichasMostradas = 0;
-    int maxFichasPorLinea[] = {1, 2, 3, 1}; // Patrón de pirámide
     
-    for (int linea = 0; linea < 4 && actual != nullptr; linea++) {
-        int fichasEnLinea = maxFichasPorLinea[linea];
+    // Patrón de pirámide: 1, 2, 3, 1 fichas por línea
+    int fichasPorLinea[] = {1, 2, 3, 1};
+    
+    for (int linea = 0; linea < 4 && fichaActual != nullptr; linea++) {
+        int cuantasFichas = fichasPorLinea[linea];
         
-        // Centrar la línea
-        int espacios = (7 - fichasEnLinea) * 2;
+        // Centramos la línea
+        int espacios = (7 - cuantasFichas) * 2;
         for (int i = 0; i < espacios; i++) {
             cout << " ";
         }
         
-        // Mostrar fichas de esta línea
-        for (int i = 0; i < fichasEnLinea && actual != nullptr; i++) {
-            cout << "[" << actual->dato.lado1 << "|" << actual->dato.lado2 << "] ";
-            actual = actual->siguiente;
+        // Mostramos las fichas de esta línea
+        for (int i = 0; i < cuantasFichas && fichaActual != nullptr; i++) {
+            cout << "[" << fichaActual->ficha.lado1 << "|" << fichaActual->ficha.lado2 << "] ";
+            fichaActual = fichaActual->siguiente;
             fichasMostradas++;
         }
         cout << endl;
     }
     
-    // Si hay más de 7 fichas (no debería pasar en dominó normal)
-    while (actual != nullptr) {
-        cout << "[" << actual->dato.lado1 << "|" << actual->dato.lado2 << "] ";
-        actual = actual->siguiente;
-    }
-    cout << endl;
-}
-
-// Mostrar pozo en pirámide
-void mostrarPozoPiramideCompleta(ListaFicha pozo) {
-    cout << "\n" << string(40, '=') << endl;
-    cout << "          POZO - " << contarFichas(pozo) << " FICHAS" << endl;
-    cout << string(40, '=') << endl;
-    
-    NodoFicha* actual = pozo.cabeza;
-    int total = contarFichas(pozo);
-    
-    if (total == 0) {
-        cout << "     ╔═════════╗" << endl;
-        cout << "     ║  VACÍO  ║" << endl;
-        cout << "     ╚═════════╝" << endl;
-        return;
-    }
-    
-    // Pirámide adaptable según cantidad de fichas
-    if (total <= 7) {
-        // Pirámide pequeña
-        int patron[] = {1, 2, 3, 1};
-        for (int linea = 0; linea < 4 && actual != nullptr; linea++) {
-            int espacios = (4 - patron[linea]) * 3;
-            for (int i = 0; i < espacios; i++) cout << " ";
-            for (int i = 0; i < patron[linea] && actual != nullptr; i++) {
-                cout << "[" << actual->dato.lado1 << "|" << actual->dato.lado2 << "] ";
-                actual = actual->siguiente;
-            }
-            cout << endl;
-        }
-    } else {
-        // Pirámide grande
-        int patron[] = {2, 3, 4, 3, 2};
-        for (int linea = 0; linea < 5 && actual != nullptr; linea++) {
-            int espacios = (5 - patron[linea]) * 2;
-            for (int i = 0; i < espacios; i++) cout << " ";
-            for (int i = 0; i < patron[linea] && actual != nullptr; i++) {
-                cout << "[" << actual->dato.lado1 << "|" << actual->dato.lado2 << "] ";
-                actual = actual->siguiente;
-            }
-            cout << endl;
-        }
-    }
-    
-    // Mostrar fichas restantes si hay muchas
-    if (actual != nullptr) {
-        cout << "\n... y " << (total - 14) << " fichas más ...";
+    // Por si acaso hay más de 7 fichas (no debería pasar)
+    while (fichaActual != nullptr) {
+        cout << "[" << fichaActual->ficha.lado1 << "|" << fichaActual->ficha.lado2 << "] ";
+        fichaActual = fichaActual->siguiente;
     }
 }
 
-// Función para mostrar estado completo del juego
-void mostrarEstadoCompleto(Juego juego) {
-    cout << "\n" << string(60, '=') << endl;
-    cout << "           ESTADO ACTUAL DEL JUEGO" << endl;
-    cout << string(60, '=') << endl;
+// Muestra el estado completo del juego
+void mostrarTodoElJuego(Juego juego) {
+    cout << "\n" << string(50, '=') << endl;
+    cout << "        ESTADO ACTUAL DEL JUEGO" << endl;
+    cout << string(50, '=') << endl;
     
-    // Mostrar pozo primero
-    mostrarPozoPiramideCompleta(juego.pozo);
+    // Mostramos el pozo
+    cout << "\nPOZO (" << contarFichasEnCola(juego.pozo) << " fichas restantes):" << endl;
+    mostrarFichasCola(juego.pozo);
+    cout << "\n" << endl;
     
-    cout << "\n" << string(40, '-') << endl;
-    cout << "          MANOS DE JUGADORES" << endl;
-    cout << string(40, '-') << endl;
+    // Mostramos los jugadores
+    cout << string(30, '-') << endl;
+    cout << "    JUGADORES" << endl;
+    cout << string(30, '-') << endl;
     
-    // Mostrar jugadores
-    for(int i = 0; i < juego.numJugadores; i++){
-        mostrarManoPiramideCentrada(juego.Jugadores[i].mano, 
-                                   juego.Jugadores[i].nombre);
-        cout << "Puntos acumulados: " << juego.Jugadores[i].puntos << "\n" << endl;
+    for(int i = 0; i < juego.numJugadores; i++) {
+        mostrarManoConEstilo(juego.jugadores[i].mano, juego.jugadores[i].nombre);
+        cout << "Puntos: " << juego.jugadores[i].puntos << "\n" << endl;
     }
 }
 
-// Generamos los jugadores
-void inicilizarjugadores(Juego &juego){
-    cout << "Ingrese el número de jugadores (2 a 4): ";
+// Pide los datos de los jugadores
+void configurarJugadores(Juego &juego) {
+    cout << "¿Cuántos jugadores van a jugar? (2-4): ";
     cin >> juego.numJugadores;
 
-    // Validar número de jugadores
+    // Validamos que el número sea correcto
     while (juego.numJugadores < 2 || juego.numJugadores > 4) {
-        cout << "Error: debe ser entre 2 y 4 jugadores. Intente nuevamente: ";
+        cout << "Tiene que ser entre 2 y 4 jugadores. Intenta de nuevo: ";
         cin >> juego.numJugadores;
     }
 
-    for(int i = 0; i < juego.numJugadores; i++){
-        cout << "Nombre del jugador " << i + 1 << ": ";
-        cin >> juego.Jugadores[i].nombre;
-        juego.Jugadores[i].mano.cabeza = nullptr;
-        juego.Jugadores[i].puntos = 0;
+    // Pedimos los nombres de cada jugador
+    for(int i = 0; i < juego.numJugadores; i++) {
+        cout << "Nombre del jugador " << (i + 1) << ": ";
+        cin >> juego.jugadores[i].nombre;
+        crearPila(juego.jugadores[i].mano);  // Inicializamos su mano vacía
+        juego.jugadores[i].puntos = 0;
     }
 }
 
-// Busca una ficha aleatoria
-Ficha extraerFichaAleatoria(ListaFicha &lista){
-    int total = contarFichas(lista);
-    if(total == 0){
-        cout << "Error: pozo vacío\n";
-        return crearFicha(-1,-1);
-    }
-
-    int posicion = rand() % total; // indice de la lista aleatorio
-    NodoFicha *actual = lista.cabeza;
-    NodoFicha *anterior = nullptr;
-
-    for(int i = 0; i < posicion; i++){
-        anterior = actual;
-        actual = actual -> siguiente;
-    }
-
-    // Desconecta el nodo
-    if(anterior == nullptr){
-        lista.cabeza = actual -> siguiente;
-    }
-    else{
-        anterior -> siguiente = actual -> siguiente;
-    }
-
-    Ficha final = actual -> dato;
-    delete actual;
-    return final;
-}
-
-// Repartimos las fichas - CORREGIDO
-void repartirFichas(Juego &juego){
-    srand(time(0)); //inicializa el generador aleatoriamente
-
-    for(int i = 0; i < juego.numJugadores; i++){
-        for(int j = 0; j < 7; j++){  // CORREGIDO: j < 7 en lugar de j > 7
-            Ficha robada = extraerFichaAleatoria(juego.pozo);
-            insertarFicha(juego.Jugadores[i].mano, robada);
+// Reparte 7 fichas a cada jugador
+void repartirFichas(Juego &juego) {
+    srand(time(0));  // Para que sea aleatorio cada vez
+    
+    cout << "\nRepartiendo fichas..." << endl;
+    
+    for(int jugador = 0; jugador < juego.numJugadores; jugador++) {
+        for(int ficha = 0; ficha < 7; ficha++) {
+            Ficha fichaRobada = sacarFichaCola(juego.pozo);
+            insertarFichaPila(juego.jugadores[jugador].mano, fichaRobada);
         }
     }
+    
+    cout << "¡Fichas repartidas! Cada jugador tiene 7 fichas." << endl;
 }
 
-// Mostramos la mano de los jugadores - CORREGIDO
-void mostrarJugadores(Juego juego){
-    for(int i = 0; i < juego.numJugadores; i++){  // CORREGIDO: i < juego.numJugadores
-        cout << juego.Jugadores[i].nombre << ": ";
-        mostarLista(juego.Jugadores[i].mano);
-        cout << " (Fichas: " << contarFichas(juego.Jugadores[i].mano) << ")\n";
-    }
+// Muestra información del pozo (útil para debug)
+void verEstadoDelPozo(Juego juego) {
+    cout << "\n*** INFORMACIÓN DEL POZO ***" << endl;
+    cout << "Fichas en el pozo: " << contarFichasEnCola(juego.pozo) << endl;
+    cout << "Fichas: ";
+    mostrarFichasCola(juego.pozo);
+    cout << "\n****************************\n" << endl;
 }
 
-// Función para debug del pozo
-void mostrarEstadoPozo(Juego juego){
-    cout << "\n=== ESTADO DEL POZO ===" << endl;
-    cout << "Fichas en pozo: " << contarFichas(juego.pozo) << endl;
-    cout << "Fichas en pozo: ";
-    mostarLista(juego.pozo);
-    cout << "========================\n" << endl;
-}
-
-int main(){
-    Juego juego;
-    juego.pozo.cabeza = nullptr;
-
-    // Inicializar semilla para números aleatorios
+// Función principal
+int main() {
+    Juego miJuego;
+    
+    // Inicializamos el pozo vacío
+    crearCola(miJuego.pozo);
+    
+    // Para que los números aleatorios funcionen bien
     srand(time(0));
 
-    cout << "=== INICIALIZACIÓN DEL JUEGO DOMINÓ ===" << endl;
+    cout << "🎲 BIENVENIDO AL JUEGO DE DOMINÓ 🎲" << endl;
+    cout << "===================================" << endl;
     
-    generarFichas(juego.pozo); // Crea las 28 fichas
+    // Paso 1: Generar todas las fichas
+    cout << "\nGenerando las 28 fichas del dominó..." << endl;
+    generarTodasLasFichas(miJuego.pozo);
+    verEstadoDelPozo(miJuego);
     
-    cout << "\n=== GENERACIÓN DE FICHAS ===" << endl;
-    mostrarEstadoPozo(juego);  // Verificar que se generaron las 28 fichas
+    // Paso 2: Configurar jugadores
+    configurarJugadores(miJuego);
     
-    inicilizarjugadores(juego); // Pide nombres
-    repartirFichas(juego); // reparte las 7 fichas
+    // Paso 3: Repartir fichas
+    repartirFichas(miJuego);
+    verEstadoDelPozo(miJuego);
     
-    cout << "\n=== DESPUÉS DEL REPARTO ===" << endl;
-    mostrarEstadoPozo(juego);  // Verificar cuántas fichas quedaron
-    
-    // Mostrar con el nuevo formato de pirámide
-    mostrarEstadoCompleto(juego);
+    // Paso 4: Mostrar el estado completo
+    mostrarTodoElJuego(miJuego);
 
-    // Liberar memoria
-    liberarLista(juego.pozo);
-    for(int i = 0; i < juego.numJugadores; i++){
-        liberarLista(juego.Jugadores[i].mano);
+    // Limpiar toda la memoria al final
+    cout << "Limpiando memoria..." << endl;
+    limpiarCola(miJuego.pozo);
+    for(int i = 0; i < miJuego.numJugadores; i++) {
+        limpiarPila(miJuego.jugadores[i].mano);
     }
     
-    cout << "\n¡Juego terminado! Memoria liberada correctamente." << endl;
+    cout << "\n¡Gracias por jugar! Hasta la próxima 👋" << endl;
     return 0;
 }
