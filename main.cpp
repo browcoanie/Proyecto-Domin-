@@ -1,7 +1,9 @@
 #include <iostream>
 #include "funciones.h"
+#include "utility.h"
 #include <cstdlib>
 #include <ctime>
+
 using namespace std;
 
 // Muestra todas las fichas de una pila (mano de jugador)
@@ -136,6 +138,19 @@ void verEstadoDelPozo(Juego juego) {
     cout << "\n****************************\n" << endl;
 }
 
+void showMesa(const Mesa &mesa) {
+    if (mesa.left == nullptr) {
+        cout << "Mesa is empty" << endl;
+        return;
+    }
+    mesaNode* current = mesa.left;
+    while (current != nullptr) {
+        cout << "[" << current->ficha.lado1 << "|" << current->ficha.lado2 << "] ";
+        current = current->next;
+    }
+    cout << endl;
+}
+
 // Función principal
 int main() {
     Juego miJuego;
@@ -163,6 +178,11 @@ int main() {
     
     // Paso 4: Mostrar el estado completo
     mostrarTodoElJuego(miJuego);
+
+    Mesa mesa;
+    initMesa(mesa);
+
+    showMesa(mesa);
 
     // Limpiar toda la memoria al final
     cout << "Limpiando memoria..." << endl;
