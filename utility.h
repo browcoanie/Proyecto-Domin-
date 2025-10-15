@@ -1,7 +1,3 @@
-struct Ficha {
-    int lado1;
-    int lado2;
-};
 
 struct mesaNode {
     Ficha ficha;
