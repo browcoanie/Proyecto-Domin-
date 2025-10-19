@@ -144,7 +144,17 @@ Ficha sacarFichaPila(pilasFicha &pila) {
         Ficha fichaVacia = {-1, -1};
         return fichaVacia;
     }
-    return pila.tope -> ficha;
+    // Guardamos el nodo a eliminar
+    NodoFicha *fichaEliminar = pila.tope;
+    Ficha fichaRobada = fichaEliminar -> ficha;
+
+    // Movemos el tope al siguiente
+    pila.tope = pila.tope -> siguiente;
+
+    // Liberamos la memoria
+    delete fichaEliminar;
+
+    return fichaRobada;
     
 }
 
@@ -213,4 +223,35 @@ int contarFichasEnCola(colaFicha cola) {
         actual = actual->siguiente;
     }
     return total;
+}
+
+// Mezcla las fichas del pozo
+void mezclarPozo(colaFicha &cola) {
+   
+    int totalFichas = contarFichasEnCola(cola);
+    
+    if (totalFichas <= 1) return; // No hay nada que mezclar
+    
+    Ficha *fichas = new Ficha[totalFichas];
+    
+    // Sacamos todas las fichas de la cola al arreglo
+    for (int i = 0; i < totalFichas; i++) {
+        fichas[i] = sacarFichaCola(cola);
+    }
+    
+    for (int i = totalFichas - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        
+        // Intercambiamos fichas[i] con fichas[j]
+        Ficha temp = fichas[i];
+        fichas[i] = fichas[j];
+        fichas[j] = temp;
+    }
+    
+    // Volvemos a insertar las fichas mezcladas en la cola
+    for (int i = 0; i < totalFichas; i++) {
+        insertarFichaCola(cola, fichas[i]);
+    }
+    
+    delete[] fichas;
 }

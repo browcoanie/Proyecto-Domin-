@@ -41,53 +41,87 @@ bool placeLeft(Mesa &mesa, Ficha ficha) {
     if (!isValidFicha(ficha)) {
         return false;
     }
-    mesaNode* newNode = new mesaNode(ficha);
-    if (newNode == nullptr) {
-        return false;
-    }
+    
+    // Si la mesa está vacía, simplemente añadimos la ficha
     if (mesa.left == nullptr) {
+        mesaNode* newNode = new mesaNode(ficha);
+        if (newNode == nullptr) return false;
         mesa.left = newNode;
         mesa.right = newNode;
         return true;
     }
-    if (ficha.lado1 == valueLeft(mesa)) {
-        swapSides(ficha);
-    }
-    if (ficha.lado2 == valueLeft(mesa)) {
+    
+    // Verificamos si la ficha coincide con el lado izquierdo
+    int valorIzquierdo = valueLeft(mesa);
+    
+    // Si lado2 coincide, la ficha va en la orientación correcta
+    if (ficha.lado2 == valorIzquierdo) {
+        mesaNode* newNode = new mesaNode(ficha);
+        if (newNode == nullptr) return false;
         newNode->next = mesa.left;
         mesa.left->prev = newNode;
         mesa.left = newNode;
         return true;
     }
-    delete newNode;
+    
+    // Si lado1 coincide, volteamos la ficha
+    if (ficha.lado1 == valorIzquierdo) {
+        swapSides(ficha); // Ahora lado2 coincidirá
+        mesaNode* newNode = new mesaNode(ficha);
+        if (newNode == nullptr) return false;
+        newNode->next = mesa.left;
+        mesa.left->prev = newNode;
+        mesa.left = newNode;
+        return true;
+    }
+    
+
     return false;
 }
+
 
 bool placeRight(Mesa &mesa, Ficha ficha) {
      if (!isValidFicha(ficha)) {
         return false;
     }
-    mesaNode* newNode = new mesaNode(ficha);
-    if (newNode == nullptr) {
-        return false;
-    }
-    if (mesa.right == nullptr) {
+
+     // Si la mesa está vacía, simplemente añadimos la ficha
+    if(mesa.right == nullptr){
+        mesaNode *newNode = new mesaNode(ficha);
+        if (newNode == nullptr) return false;
         mesa.left = newNode;
         mesa.right = newNode;
         return true;
     }
-    if (ficha.lado2 == valueRight(mesa)) {
-        swapSides(ficha);
-    }
-    if (ficha.lado1 == valueRight(mesa)) {
-        newNode->prev = mesa.right;
-        mesa.right->next = newNode;
+
+    // Verificamos si la ficha coincide con el lado derecho
+    int valorDerecho = valueRight(mesa);
+
+    // Si lado1 coincide, la ficha va en la orientación correcta
+    if(ficha.lado1 == valorDerecho){
+        mesaNode *newNode = new mesaNode(ficha);
+        if (newNode == nullptr) return false;
+        newNode -> prev = mesa.right;
+        mesa.right -> next = newNode;
+        mesa.right = newNode;
         return true;
     }
-    delete newNode;
-    return false;
-}
+    // Si lado2 coincide, volteamos la ficha
+    if (ficha.lado2 == valorDerecho)
+    {
+        swapSides(ficha); // Ahora lado1 coindice 
+        mesaNode *newNode = new mesaNode(ficha);
+        if (newNode == nullptr) return false;
+        newNode -> prev = mesa.right;
+        mesa.right -> next = newNode;
+        mesa.right = newNode;
+        return true;
+    }
 
+    return false;
+    
+    
+}
 
 void clearMesa(Mesa &mesa) {
     mesaNode* current = mesa.left;

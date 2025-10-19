@@ -151,6 +151,10 @@ void showMesa(const Mesa &mesa) {
     cout << endl;
 }
 
+
+
+
+// Función principal
 // Función principal
 int main() {
     Juego miJuego;
@@ -167,25 +171,23 @@ int main() {
     // Paso 1: Generar todas las fichas
     cout << "\nGenerando las 28 fichas del dominó..." << endl;
     generarTodasLasFichas(miJuego.pozo);
+    
+    // 🆕 Paso 2: Mezclar las fichas
+    cout << "Mezclando las fichas..." << endl;
+    mezclarPozo(miJuego.pozo);
     verEstadoDelPozo(miJuego);
     
-    // Paso 2: Configurar jugadores
+    // Paso 3: Configurar jugadores
     configurarJugadores(miJuego);
     
-    // Paso 3: Repartir fichas
+    // Paso 4: Repartir fichas
     repartirFichas(miJuego);
     verEstadoDelPozo(miJuego);
     
-    // Paso 4: Mostrar el estado completo
+    // Paso 5: Mostrar el estado completo
     mostrarTodoElJuego(miJuego);
 
-    Mesa mesa;
-    initMesa(mesa);
-
-    showMesa(mesa);
-
-    // Limpiar toda la memoria al final
-    cout << "Limpiando memoria..." << endl;
+    cout << "\nLimpiando memoria..." << endl;
     limpiarCola(miJuego.pozo);
     for(int i = 0; i < miJuego.numJugadores; i++) {
         limpiarPila(miJuego.jugadores[i].mano);
