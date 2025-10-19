@@ -151,10 +151,134 @@ void showMesa(const Mesa &mesa) {
     cout << endl;
 }
 
+// Muestra la mano enumerando desde el tope (índice 0)
+void mostrarManoEnumerada(const pilasFicha &mano) {
+    NodoFicha* actual = mano.tope;
+    int idx = 0;
+    if (actual == nullptr) {
+        cout << "(mano vacía)\n";
+        return;
+    }
+    while (actual != nullptr) {
+        cout << idx << ": [" << actual->ficha.lado1 << "|" << actual->ficha.lado2 << "]  ";
+        actual = actual->siguiente;
+        idx++;
+    }
+    cout << endl;
+}
 
+// Lógica de partida: rotar jugadores, permitir pasar o robar del pozo y jugar el tope
+void jugarPartida(Juego &juego) {
+    Mesa mesa;
+    initMesa(mesa);
 
+    int current = 0;
+    int consecutivosPasan = 0;
 
-// Función principal
+    while (true) {
+        Jugador &jug = juego.jugadores[current];
+        cout << "\n--- Turno de " << jug.nombre << " ---\n";
+        cout << "Pozo: " << contarFichasEnCola(juego.pozo) << " fichas\n";
+        cout << "Mesa: ";
+        showMesa(mesa);
+
+        cout << "Tu mano:\n";
+        mostrarManoEnumerada(jug.mano);
+
+        cout << "Elige acción: (J)ugar tope, (D)robar, (P)asar : ";
+        char accion;
+        cin >> accion;
+
+        if (accion == 'J' || accion == 'j') {
+            if (pilaVacia(jug.mano)) {
+                cout << "No tienes fichas para jugar.\n";
+                // no cambia consecutivosPasan, el turno termina
+            } else {
+                Ficha tope = jug.mano.tope->ficha;
+                bool puedeIzq = false, puedeDer = false;
+                if (mesa.left == nullptr) {
+                    puedeIzq = puedeDer = true;
+                } else {
+                    int vIzq = valueLeft(mesa);
+                    int vDer = valueRight(mesa);
+                    if (tope.lado2 == vIzq || tope.lado1 == vIzq) puedeIzq = true;
+                    if (tope.lado1 == vDer || tope.lado2 == vDer) puedeDer = true;
+                }
+
+                if (!puedeIzq && !puedeDer) {
+                    cout << "La ficha superior no puede colocarse en ningún lado.\n";
+                } else {
+                    cout << "Puedes colocar en: " << (puedeIzq ? "Izquierda " : "") << (puedeDer ? "Derecha" : "") << "\nSelecciona lado (I/D): ";
+                    char lado; cin >> lado;
+                    if ((lado == 'I' || lado == 'i') && puedeIzq) {
+                        Ficha f = sacarFichaPila(jug.mano);
+                        if (!placeLeft(mesa, f)) {
+                            // si fallara (caso raro), devolver la ficha al tope
+                            insertarFichaPila(jug.mano, f);
+                            cout << "Error al colocar a la izquierda. Ficha devuelta.\n";
+                        } else {
+                            cout << "Ficha colocada a la izquierda.\n";
+                            consecutivosPasan = 0;
+                        }
+                    } else if ((lado == 'D' || lado == 'd') && puedeDer) {
+                        Ficha f = sacarFichaPila(jug.mano);
+                        if (!placeRight(mesa, f)) {
+                            insertarFichaPila(jug.mano, f);
+                            cout << "Error al colocar a la derecha. Ficha devuelta.\n";
+                        } else {
+                            cout << "Ficha colocada a la derecha.\n";
+                            consecutivosPasan = 0;
+                        }
+                    } else {
+                        cout << "Lado inválido o no permitido. No se jugó.\n";
+                    }
+                }
+
+                if (contarFichasEnPila(jug.mano) == 0) {
+                    cout << "\n¡" << jug.nombre << " se quedó sin fichas y gana la partida!\n";
+                    break;
+                }
+            }
+        } else if (accion == 'D' || accion == 'd') {
+            Ficha robada = sacarFichaCola(juego.pozo);
+            if (robada.lado1 == -1 && robada.lado2 == -1) {
+                cout << "El pozo está vacío. No puedes robar.\n";
+            } else {
+                insertarFichaPila(jug.mano, robada);
+                cout << "Has robado [" << robada.lado1 << "|" << robada.lado2 << "].\n";
+                // robar cuenta como acción que rompe la secuencia de pases
+                consecutivosPasan = 0;
+            }
+        } else if (accion == 'P' || accion == 'p') {
+            cout << jug.nombre << " pasa su turno.\n";
+            consecutivosPasan++;
+        } else {
+            cout << "Opción inválida.\n";
+            // no avanzar el contador de pases de forma automática
+        }
+
+        // Fin de ronda bloqueada: todos pasaron y pozo vacío
+        if (consecutivosPasan >= juego.numJugadores && contarFichasEnCola(juego.pozo) == 0) {
+            cout << "\nTodos los jugadores pasaron y el pozo está vacío. Fin de la ronda.\n";
+            break;
+        }
+
+        // Rotar al siguiente jugador
+        current = (current + 1) % juego.numJugadores;
+    }
+
+    // Estado final de la mesa y manos
+    cout << "\nEstado final de la mesa:\n";
+    showMesa(mesa);
+    cout << "\nManos finales:\n";
+    for (int i = 0; i < juego.numJugadores; ++i) {
+        cout << juego.jugadores[i].nombre << ": ";
+        mostrarManoEnumerada(juego.jugadores[i].mano);
+    }
+
+    clearMesa(mesa);
+}
+
 // Función principal
 int main() {
     Juego miJuego;
