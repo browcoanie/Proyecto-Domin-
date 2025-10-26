@@ -119,7 +119,7 @@ inline bool sacarFichaEspecifica(pilasFicha &pila, int lado1, int lado2, Ficha &
         Ficha actual = sacarFichaPila(pila);
 
         if ((actual.lado1 == lado1 && actual.lado2 == lado2) ||
-            (actual.lado1 == lado2 && actual.lado2 == la1)) {
+            (actual.lado1 == lado2 && actual.lado2 == lado1)) {
             // la encontramos! la guardamos y no la metemos a la aux
             fichaEncontrada = actual;
             encontrada = true;
