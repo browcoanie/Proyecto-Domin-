@@ -3,7 +3,8 @@
 
 #include <string>
 #include <cstdlib>
-
+// OJO: Quitar el 'using namespace std;' de los .h
+// Es mala practica, mejor usar 'std::'
 
 // =====================================================
 // ESTRUCTURAS DE DATOS
@@ -118,7 +119,7 @@ inline bool sacarFichaEspecifica(pilasFicha &pila, int lado1, int lado2, Ficha &
         Ficha actual = sacarFichaPila(pila);
 
         if ((actual.lado1 == lado1 && actual.lado2 == lado2) ||
-            (actual.lado1 == lado2 && actual.lado2 == lado1)) {
+            (actual.lado1 == lado2 && actual.lado2 == la1)) {
             // la encontramos! la guardamos y no la metemos a la aux
             fichaEncontrada = actual;
             encontrada = true;
@@ -212,7 +213,7 @@ inline int buscarFichaDobleMasAlta(pilasFicha mano) {
     return fichaDobleMaxima;
 }
 
-// compara los dobles de todos los jugadores
+// compara los dobles de todos los jugadores (SOLO PARA LA RONDA 1)
 inline int determinarQuienEmpieza(Juego &juego, int &fichaEncontrada) {
     int jugadorInicial = 0;
     int fichaDobleMaximaGlobal = -1;
@@ -269,7 +270,7 @@ inline bool robarDelPozo(Juego &juego, int indiceJugador) {
 
 // FUNCIONES PARA PUNTUAR
 
-// suma los puntos de una mano
+// suma los puntos de una mano (ESTA ES CLAVE AHORA)
 int calcularPuntosManos(pilasFicha mano){
     int puntosTotales = 0;
     NodoFicha *actual = mano.tope;
@@ -281,18 +282,7 @@ int calcularPuntosManos(pilasFicha mano){
     return puntosTotales;
 }
 
-// suma los puntos de los perdedores
-int calcularPuntosRondas(Juego &juego, int indiceGanador){
-    int puntosGanados = 0;
-    for (int i = 0; i < juego.numJugadores; i++)
-    {
-        if (i != indiceGanador) // si NO es el ganador
-        {
-            puntosGanados += calcularPuntosManos(juego.jugadores[i].mano);
-        }
-    }
-    return puntosGanados;
-}
+// (Se eliminó 'calcularPuntosRondas' porque la lógica cambió)
 
 // si hay tranca, gana el que tenga MENOS puntos
 int encontrarGanadorPorTranca(Juego &juego){
@@ -312,7 +302,7 @@ int encontrarGanadorPorTranca(Juego &juego){
 
 // solo imprime la tabla de puntos
 inline void mostrarPuntosJugadores(Juego &juego) {
-    std::cout << "\n📊 PUNTUACIÓN ACUMULADA:" << std::endl;
+    std::cout << "\n📊 PUNTUACIÓN ACUMULADA (Menos es mejor):" << std::endl;
     std::cout << std::string(40, '-') << std::endl;
     for (int i = 0; i < juego.numJugadores; i++) {
         std::cout << juego.jugadores[i].nombre << ": " << juego.jugadores[i].puntos << " puntos" << std::endl;
