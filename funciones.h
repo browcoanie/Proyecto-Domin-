@@ -3,165 +3,84 @@
 
 #include <string>
 #include <cstdlib>
-using namespace std;
+
 
 // =====================================================
 // ESTRUCTURAS DE DATOS
 // =====================================================
 
-// Las fichas de dominó tienen dos números
+// La ficha, simple
 struct Ficha {
     int lado1;
     int lado2;
 };
 
-// Cada nodo guarda una ficha y apunta a la siguiente
+// el "bloque" o "vagon" de la pila
 struct NodoFicha {
     Ficha ficha;
     NodoFicha *siguiente;
 };
 
-// Cola - Para el pozo (FIFO: First In First Out)
-struct colaFicha {
-    NodoFicha *frente; // Donde sacamos las fichas
-    NodoFicha *final;  // Donde metemos nuevas fichas
-};
 
-// Pila - Para las manos de los jugadores (LIFO: Last In First Out)
+// la pila, solo nos importa el tope
 struct pilasFicha {
-    NodoFicha *tope; // La ficha que está arriba del todo
+    NodoFicha *tope;
 };
 
+// datos del jugador
 struct Jugador {
-    string nombre;
-    pilasFicha mano; // Su mano de fichas (como una pila)
+    std::string nombre;
+    pilasFicha mano;    // la mano del jugador es una pila
     int puntos;
-    bool paso; // Para saber si pasó en este turno
+    bool paso;          // para la "tranca"
 };
 
+// el "cerebro" del juego, guarda todo
 struct Juego {
-    Jugador jugadores[4]; // Máximo 4 jugadores
+    Jugador jugadores[4];
     int numJugadores;
-    colaFicha pozo;       // Fichas sobrantes
-    int turnoActual;      // Índice del jugador actual
+    pilasFicha pozo;      // el pozo tambien es una pila
+    int turnoActual;
 };
 
-// =====================================================
-// FUNCIONES PARA COLA (POZO)
-// =====================================================
 
-// Inicializa una cola vacía
-inline void crearCola(colaFicha &cola) {
-    cola.frente = cola.final = nullptr;
-}
-
-// Verifica si la cola está vacía
-inline bool colaVacia(colaFicha cola) {
-    return cola.frente == nullptr;
-}
-
-// Mete una ficha al final de la cola
-inline void insertarFichaCola(colaFicha &cola, Ficha ficha) {
-    NodoFicha *nuevaFicha = new NodoFicha;
-    nuevaFicha->ficha = ficha;
-    nuevaFicha->siguiente = nullptr;
-
-    if (colaVacia(cola)) {
-        cola.frente = cola.final = nuevaFicha;
-    } else {
-        cola.final->siguiente = nuevaFicha;
-        cola.final = nuevaFicha;
-    }
-}
-
-// Saca una ficha del frente de la cola
-inline Ficha sacarFichaCola(colaFicha &cola) {
-    if (colaVacia(cola)) {
-        Ficha fichaVacia = {-1, -1};
-        return fichaVacia;
-    }
-
-    NodoFicha *fichaEliminar = cola.frente;
-    Ficha fichaRobada = fichaEliminar->ficha;
-
-    cola.frente = cola.frente->siguiente;
-
-    if (cola.frente == nullptr) {
-        cola.final = nullptr;
-    }
-
-    delete fichaEliminar;
-    return fichaRobada;
-}
-
-// Mira qué ficha está al frente sin sacarla
-inline Ficha verFrenteCola(colaFicha cola) {
-    if (colaVacia(cola)) {
-        Ficha fichaVacia = {-1, -1};
-        return fichaVacia;
-    }
-    return cola.frente->ficha;
-}
-
-// Cuenta cuántas fichas hay en una cola
-inline int contarFichasEnCola(colaFicha cola) {
-    int total = 0;
-    NodoFicha *actual = cola.frente;
-
-    while (actual != nullptr) {
-        total++;
-        actual = actual->siguiente;
-    }
-    return total;
-}
-
-// Libera toda la memoria de una cola
-inline void limpiarCola(colaFicha &cola) {
-    while (!colaVacia(cola)) {
-        sacarFichaCola(cola);
-    }
-}
 
 // =====================================================
-// FUNCIONES PARA PILA (MANO DE JUGADORES)
+// FUNCIONES PARA PILA (MANO Y POZO)
 // =====================================================
 
-// Inicializa una pila vacía
+// inicia la pila vacia
 inline void crearPila(pilasFicha &pila) {
     pila.tope = nullptr;
 }
 
-// Verifica si la pila está vacía
+// revisa si esta vacia
 inline bool pilaVacia(pilasFicha pila) {
     return pila.tope == nullptr;
 }
 
-// Inserta una ficha en el tope de la pila
+// PUSH
 inline void insertarFichaPila(pilasFicha &pila, Ficha ficha) {
     NodoFicha *nuevaFicha = new NodoFicha;
     nuevaFicha->ficha = ficha;
-    nuevaFicha->siguiente = pila.tope;
-    pila.tope = nuevaFicha;
+    nuevaFicha->siguiente = pila.tope; // apunta al tope anterior
+    pila.tope = nuevaFicha;         // el nuevo es el tope
 }
 
-// Saca la ficha de arriba de la pila
+// POP
 inline Ficha sacarFichaPila(pilasFicha &pila) {
     if (pilaVacia(pila)) {
-        Ficha fichaVacia = {-1, -1};
+        Ficha fichaVacia = {-1, -1}; // ficha "mala"
         return fichaVacia;
     }
-
     NodoFicha *fichaEliminar = pila.tope;
     Ficha fichaRobada = fichaEliminar->ficha;
-
-    pila.tope = pila.tope->siguiente;
-
-    delete fichaEliminar;
-
+    pila.tope = pila.tope->siguiente; // avanzamos el tope
+    delete fichaEliminar; // borramos el nodo viejo
     return fichaRobada;
 }
 
-// Mira la ficha del tope sin sacarla
+// PEEK (espiar)
 inline Ficha verTopePila(pilasFicha pila) {
     if (pilaVacia(pila)) {
         Ficha fichaVacia = {-1, -1};
@@ -170,7 +89,7 @@ inline Ficha verTopePila(pilasFicha pila) {
     return pila.tope->ficha;
 }
 
-// Cuenta cuántas fichas hay en una pila
+// un contador simple
 inline int contarFichasEnPila(pilasFicha pila) {
     int total = 0;
     NodoFicha *actual = pila.tope;
@@ -182,28 +101,34 @@ inline int contarFichasEnPila(pilasFicha pila) {
     return total;
 }
 
-// Busca una ficha específica en la pila y la saca
+// Esta es la funcion "magica" para sacar una ficha de en medio
+// Usa una pila auxiliar, es el truco
 inline bool sacarFichaEspecifica(pilasFicha &pila, int lado1, int lado2, Ficha &fichaEncontrada) {
     if (pilaVacia(pila)) {
         return false;
     }
 
+    // 1. crear pila aux
     pilasFicha pilaAux;
     crearPila(pilaAux);
     bool encontrada = false;
 
+    // 2. vaciar la pila original a la aux
     while (!pilaVacia(pila) && !encontrada) {
         Ficha actual = sacarFichaPila(pila);
 
         if ((actual.lado1 == lado1 && actual.lado2 == lado2) ||
             (actual.lado1 == lado2 && actual.lado2 == lado1)) {
+            // la encontramos! la guardamos y no la metemos a la aux
             fichaEncontrada = actual;
             encontrada = true;
         } else {
+            // no es, la guardamos en aux
             insertarFichaPila(pilaAux, actual);
         }
     }
 
+    // 3. devolver todo a la pila original
     while (!pilaVacia(pilaAux)) {
         Ficha temp = sacarFichaPila(pilaAux);
         insertarFichaPila(pila, temp);
@@ -212,7 +137,7 @@ inline bool sacarFichaEspecifica(pilasFicha &pila, int lado1, int lado2, Ficha &
     return encontrada;
 }
 
-// Libera toda la memoria de una pila
+// liberar memoria (MUY importante)
 inline void limpiarPila(pilasFicha &pila) {
     while (!pilaVacia(pila)) {
         sacarFichaPila(pila);
@@ -223,7 +148,7 @@ inline void limpiarPila(pilasFicha &pila) {
 // FUNCIONES PARA FICHAS
 
 
-// Crea una ficha con los números que le pasamos
+// solo crea la ficha
 inline Ficha crearFicha(int num1, int num2) {
     Ficha nuevaFicha;
     nuevaFicha.lado1 = num1;
@@ -231,66 +156,63 @@ inline Ficha crearFicha(int num1, int num2) {
     return nuevaFicha;
 }
 
-// Genera las 28 fichas del dominó y las mete en la cola
-inline void generarTodasLasFichas(colaFicha &cola) {
+// genera las 28 fichas
+inline void generarTodasLasFichas(pilasFicha &pila) {
     for (int i = 0; i <= 6; i++) {
-        for (int j = i; j <= 6; j++) {
+        for (int j = i; j <= 6; j++) { // j=i para no repetir (ej. [1|2] y [2|1])
             Ficha ficha = crearFicha(i, j);
-            insertarFichaCola(cola, ficha);
+            insertarFichaPila(pila, ficha);
         }
     }
 }
 
-// Mezcla las fichas del pozo aleatoriamente (algoritmo Fisher-Yates)
-inline void mezclarPozo(colaFicha &cola) {
-    int totalFichas = contarFichasEnCola(cola);
-
+// Barajar (Algoritmo Fisher-Yates)
+inline void mezclarPozo(pilasFicha &pila) {
+    int totalFichas = contarFichasEnPila(pila);
     if (totalFichas <= 1) return;
 
+    // 1. crear array temp
     Ficha *fichas = new Ficha[totalFichas];
-
+    // 2. vaciar pila al array
     for (int i = 0; i < totalFichas; i++) {
-        fichas[i] = sacarFichaCola(cola);
+        fichas[i] = sacarFichaPila(pila);
     }
-
+    // 3. el algoritmo de barajado
     for (int i = totalFichas - 1; i > 0; i--) {
-        int j = rand() % (i + 1);
-
+        int j = rand() % (i + 1); // indice al azar
+        // swap
         Ficha temp = fichas[i];
         fichas[i] = fichas[j];
         fichas[j] = temp;
     }
-
+    // 4. devolver a la pila
     for (int i = 0; i < totalFichas; i++) {
-        insertarFichaCola(cola, fichas[i]);
+        insertarFichaPila(pila, fichas[i]);
     }
-
+    // 5. OJO: borrar el array
     delete[] fichas;
 }
 
 
 // FUNCIONES DE LÓGICA DE JUEGO
 
-
-// Busca la ficha doble más alta en la mano de un jugador
+// revisa la mano por el doble mas alto
 inline int buscarFichaDobleMasAlta(pilasFicha mano) {
-    int fichaDobleMaxima = -1;
+    int fichaDobleMaxima = -1; // -1 = ninguna
     NodoFicha *actual = mano.tope;
 
     while (actual != nullptr) {
-        if (actual->ficha.lado1 == actual->ficha.lado2) {
+        if (actual->ficha.lado1 == actual->ficha.lado2) { // es doble?
             if (actual->ficha.lado1 > fichaDobleMaxima) {
                 fichaDobleMaxima = actual->ficha.lado1;
             }
         }
         actual = actual->siguiente;
     }
-
     return fichaDobleMaxima;
 }
 
-// Determina qué jugador empieza (quien tiene la ficha doble más alta)
-// Retorna el índice del jugador y guarda la ficha en fichaEncontrada
+// compara los dobles de todos los jugadores
 inline int determinarQuienEmpieza(Juego &juego, int &fichaEncontrada) {
     int jugadorInicial = 0;
     int fichaDobleMaximaGlobal = -1;
@@ -302,49 +224,100 @@ inline int determinarQuienEmpieza(Juego &juego, int &fichaEncontrada) {
             jugadorInicial = i;
         }
     }
-
     fichaEncontrada = fichaDobleMaximaGlobal;
-    return jugadorInicial;
+    return jugadorInicial; // devuelve el INDICE del jugador
 }
 
-// Avanza al siguiente jugador
+// el % hace que de la vuelta (ej. 3+1 % 4 = 0)
 inline void siguienteTurno(Juego &juego) {
     juego.turnoActual = (juego.turnoActual + 1) % juego.numJugadores;
 }
 
-// Verifica si una ficha puede jugarse en la mesa
+// revisa si la ficha se puede jugar
 inline bool puedeJugarFicha(Ficha ficha, int valorIzq, int valorDer) {
+    // si la mesa esta vacia, cualquiera sirve
     if (valorIzq == -1 && valorDer == -1) {
         return true;
     }
-
+    // revisa las puntas
     return (ficha.lado1 == valorIzq || ficha.lado2 == valorIzq ||
             ficha.lado1 == valorDer || ficha.lado2 == valorDer);
 }
 
-// Verifica si un jugador tiene alguna jugada válida
+// revisa toda la mano a ver si tiene AL MENOS una jugada
 inline bool tieneJugadaValida(pilasFicha mano, int valorIzq, int valorDer) {
     NodoFicha *actual = mano.tope;
-
     while (actual != nullptr) {
         if (puedeJugarFicha(actual->ficha, valorIzq, valorDer)) {
-            return true;
+            return true; // encontramos una!
         }
         actual = actual->siguiente;
     }
-
-    return false;
+    return false; // no tiene nada
 }
 
-// Roba una ficha del pozo
+// pop del pozo, push a la mano
 inline bool robarDelPozo(Juego &juego, int indiceJugador) {
-    if (colaVacia(juego.pozo)) {
+    if (pilaVacia(juego.pozo)) {
         return false;
     }
-
-    Ficha fichaRobada = sacarFichaCola(juego.pozo);
+    Ficha fichaRobada = sacarFichaPila(juego.pozo);
     insertarFichaPila(juego.jugadores[indiceJugador].mano, fichaRobada);
     return true;
 }
 
-#endif 
+
+// FUNCIONES PARA PUNTUAR
+
+// suma los puntos de una mano
+int calcularPuntosManos(pilasFicha mano){
+    int puntosTotales = 0;
+    NodoFicha *actual = mano.tope;
+    while (actual != nullptr)
+    {
+        puntosTotales += actual -> ficha.lado1 + actual -> ficha.lado2;
+        actual = actual -> siguiente; 
+    }
+    return puntosTotales;
+}
+
+// suma los puntos de los perdedores
+int calcularPuntosRondas(Juego &juego, int indiceGanador){
+    int puntosGanados = 0;
+    for (int i = 0; i < juego.numJugadores; i++)
+    {
+        if (i != indiceGanador) // si NO es el ganador
+        {
+            puntosGanados += calcularPuntosManos(juego.jugadores[i].mano);
+        }
+    }
+    return puntosGanados;
+}
+
+// si hay tranca, gana el que tenga MENOS puntos
+int encontrarGanadorPorTranca(Juego &juego){
+    int jugadorConMenosPuntos = 0;
+    int menosPuntos = calcularPuntosManos(juego.jugadores[0].mano);
+    for (int i = 1; i < juego.numJugadores;    i++)
+    {
+        int puntosJugadores = calcularPuntosManos(juego.jugadores[i].mano);
+        if (puntosJugadores < menosPuntos)
+        {
+            menosPuntos = puntosJugadores;
+            jugadorConMenosPuntos = i;
+        }
+    }
+    return jugadorConMenosPuntos;
+}
+
+// solo imprime la tabla de puntos
+inline void mostrarPuntosJugadores(Juego &juego) {
+    std::cout << "\n📊 PUNTUACIÓN ACUMULADA:" << std::endl;
+    std::cout << std::string(40, '-') << std::endl;
+    for (int i = 0; i < juego.numJugadores; i++) {
+        std::cout << juego.jugadores[i].nombre << ": " << juego.jugadores[i].puntos << " puntos" << std::endl;
+    }
+    std::cout << std::string(40, '-') << std::endl;
+}
+
+#endif
