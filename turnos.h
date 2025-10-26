@@ -285,7 +285,7 @@ void configurarJugadores(Juego &juego) {
         std::cout << "Nombre del jugador " << (i + 1) << ": ";
         std::cin >> juego.jugadores[i].nombre;
         crearPila(juego.jugadores[i].mano);
-        juego.jugadores[i].puntos = 0;
+        juego.jugadores[i].puntos = 0; // Puntos en contra empiezan en 0
         juego.jugadores[i].paso = false;
     }
 }
@@ -304,8 +304,8 @@ void repartirFichas(Juego &juego) {
 
 // FUNCIONES DE CONTROL DE FLUJO
 
-// Prepara la ronda
-void iniciarRonda(Juego &juego, Mesa &mesa) {
+// Prepara la ronda (CAMBIO: ahora recibe quién ganó la ronda anterior)
+void iniciarRonda(Juego &juego, Mesa &mesa, int ganadorRondaAnterior) {
     // 1. Limpiar todo
     limpiarPila(juego.pozo);
     clearMesa(mesa);
@@ -322,40 +322,43 @@ void iniciarRonda(Juego &juego, Mesa &mesa) {
     // 3. repartir
     repartirFichas(juego);
     
-    // 4. JUGADA INICIAL AUTOMATICA
-    int fichaDobleInicial = -1;
-    int indiceJugadorInicial = determinarQuienEmpieza(juego, fichaDobleInicial);
-    juego.turnoActual = indiceJugadorInicial; 
-    
-    std::cout << "\n🎮 El primer jugador es: " << juego.jugadores[indiceJugadorInicial].nombre << std::endl;
+    // 4. Vemos quién empieza (¡NUEVA LÓGICA!)
+    if (ganadorRondaAnterior == -1) {
+        // Es la RONDA 1, usa la lógica del doble más alto
+        int fichaDobleInicial = -1;
+        int indiceJugadorInicial = determinarQuienEmpieza(juego, fichaDobleInicial);
+        juego.turnoActual = indiceJugadorInicial; 
+        
+        std::cout << "\n🎮 El primer jugador es: " << juego.jugadores[indiceJugadorInicial].nombre << std::endl;
 
-    if (fichaDobleInicial >= 0) {
-        // tiene un doble, lo juega
-        std::cout << "💎 ¡Empieza colocando la ficha doble [" << fichaDobleInicial << "|" << fichaDobleInicial << "]!" << std::endl;
+        if (fichaDobleInicial >= 0) {
+            // tiene un doble, lo juega
+            std::cout << "💎 ¡Empieza colocando la ficha doble [" << fichaDobleInicial << "|" << fichaDobleInicial << "]!" << std::endl;
 
-        Ficha fichaInicio;
-        // se la sacamos
-        sacarFichaEspecifica(
-            juego.jugadores[indiceJugadorInicial].mano,
-            fichaDobleInicial, 
-            fichaDobleInicial, 
-            fichaInicio
-        );
-        // la ponemos
-        placeLeft(mesa, fichaInicio);
+            Ficha fichaInicio;
+            sacarFichaEspecifica(
+                juego.jugadores[indiceJugadorInicial].mano,
+                fichaDobleInicial, 
+                fichaDobleInicial, 
+                fichaInicio
+            );
+            placeLeft(mesa, fichaInicio); // la ponemos
+            siguienteTurno(juego); // IMPORTANTE: pasa el turno
+            std::cout << "Turno inicial completado. Ahora le toca a: " << juego.jugadores[juego.turnoActual].nombre << std::endl;
 
-        // IMPORTANTE: pasa el turno
-        siguienteTurno(juego);
-        std::cout << "Turno inicial completado. Ahora le toca a: " << juego.jugadores[juego.turnoActual].nombre << std::endl;
-
+        } else {
+            // no hay dobles, empieza normal
+            std::cout << "(No hay fichas dobles, el juego empieza normal)" << std::endl;
+            std::cout << "Le toca a: " << juego.jugadores[juego.turnoActual].nombre << std::endl;
+        }
     } else {
-        // no hay dobles, empieza normal
-        std::cout << "(No hay fichas dobles, el juego empieza normal)" << std::endl;
-        std::cout << "Le toca a: " << juego.jugadores[juego.turnoActual].nombre << std::endl;
+        // Es la RONDA 2 o 3, empieza el ganador anterior
+        juego.turnoActual = ganadorRondaAnterior;
+        std::cout << "\n🎮 Empieza el ganador de la ronda anterior: " << juego.jugadores[juego.turnoActual].nombre << std::endl;
     }
 }
 
-// bucle de una ronda (turno tras turno)
+// bucle de una ronda (turno tras turno) (CAMBIO: Lógica de Puntuación)
 int jugarRonda(Juego &juego, Mesa &mesa) {
     bool hayGanador = false;
     int turnosSinJugar = 0; // para la "tranca"
@@ -382,14 +385,18 @@ int jugarRonda(Juego &juego, Mesa &mesa) {
                         std::cout << "  " << juego.jugadores[i].nombre << ": " << puntosEnMano << " puntos" << std::endl;
                     }
 
-                    // buscamos ganador por puntos
+                    // buscamos ganador por puntos (el que tiene MENOS)
                     int ganadorTranca = encontrarGanadorPorTranca(juego);
-                    std::cout << "\n🏆 Gana por tener menos puntos: " << juego.jugadores[ganadorTranca].nombre << std::endl;
+                    std::cout << "\n🏆 Gana la ronda por tener menos puntos: " << juego.jugadores[ganadorTranca].nombre << std::endl;
 
-                    int puntosGanados = calcularPuntosRondas(juego, ganadorTranca);
-                    juego.jugadores[ganadorTranca].puntos += puntosGanados;
-
-                    std::cout << "💰 Puntos obtenidos: " << puntosGanados << std::endl;
+                    // --- NUEVA LÓGICA DE PUNTOS ---
+                    // Todos suman los puntos que tienen en la mano
+                    std::cout << "\nSumando puntos (en contra) a todos los jugadores..." << std::endl;
+                    for(int i = 0; i < juego.numJugadores; i++) {
+                        int puntosMano = calcularPuntosManos(juego.jugadores[i].mano);
+                        juego.jugadores[i].puntos += puntosMano; // Suma a su cuenta particular
+                        std::cout << "  " << juego.jugadores[i].nombre << " suma " << puntosMano << " puntos." << std::endl;
+                    }
                     return ganadorTranca; // se acabo la ronda
                 }
             } else {
@@ -405,10 +412,17 @@ int jugarRonda(Juego &juego, Mesa &mesa) {
         } else {
             // ¡Hubo un ganador! (se quedo sin fichas)
             int ganador = juego.turnoActual;
-            int puntosGanados = calcularPuntosRondas(juego,ganador);
-            juego.jugadores[ganador].puntos += puntosGanados;
 
-            std::cout << "💰 Puntos obtenidos: " << puntosGanados << std::endl;
+            // --- NUEVA LÓGICA DE PUNTOS ---
+            // Todos los PERDEDORES suman los puntos de sus manos
+            std::cout << "\nSumando puntos (en contra) a los perdedores..." << std::endl;
+            for(int i = 0; i < juego.numJugadores; i++) {
+                if (i == ganador) continue; // El ganador no suma puntos
+                
+                int puntosMano = calcularPuntosManos(juego.jugadores[i].mano);
+                juego.jugadores[i].puntos += puntosMano; // Suma a su cuenta particular
+                std::cout << "  " << juego.jugadores[i].nombre << " suma " << puntosMano << " puntos." << std::endl;
+            }
             return ganador; // se acabo la ronda
         }
     }
@@ -422,45 +436,31 @@ void mostrarResumenRonda(Juego &juego, int numeroRonda, int ganadorRonda){
     std::cout << "\n" << std::string(60, '=') << std::endl;
     std::cout << "        RESUMEN DE LA RONDA " << numeroRonda << std::endl;
     std::cout << std::string(60, '=') << std::endl;
-    std::cout << "\n🏆 Ganador: " << juego.jugadores[ganadorRonda].nombre << std::endl;
+    std::cout << "\n🏆 Ganador de la ronda: " << juego.jugadores[ganadorRonda].nombre << std::endl;
 
-    std::cout << "\n📋 Fichas restantes:" << std::endl;
+    // Muestra los puntos que quedaron en mano (informativo)
+    std::cout << "\n📋 Puntos en mano al finalizar:" << std::endl;
     for (int i = 0; i < juego.numJugadores; i++)
     {
         int puntosEnMano = calcularPuntosManos(juego.jugadores[i].mano);
-        if (i == ganadorRonda && puntosEnMano == 0)
-        {
-            std::cout << "  " << juego.jugadores[i].nombre << ": 0 puntos  (¡sin fichas!)" << std::endl;
-
-        }else{
-            std::cout << "  " << juego.jugadores[i].nombre << ": " << puntosEnMano << " puntos" << std::endl;
-        }
+        std::cout << "  " << juego.jugadores[i].nombre << ": " << puntosEnMano << " puntos en mano" << std::endl;
     }
+    
+    // Muestra la puntuación total (la que importa)
     mostrarPuntosJugadores(juego);
 }
 
-// revisa si alguien llego al puntaje
-bool hayGanadorFinal(Juego &juego, int puntajeObjetivo){
-    for (int i = 0; i < juego.numJugadores; i++)
-    {
-        if (juego.jugadores[i].puntos >= puntajeObjetivo)
-        {
-            return true;
-        }
-    }
-    return false;
-}
+// (Función 'hayGanadorFinal' eliminada, ya no se usa)
 
-// Encuentra al jugador con MAS puntos
-// OJO: bug arreglado aqui, empezar en 1 y comparar >
+// Encuentra al jugador con MENOS puntos (CAMBIO)
 int encontrarGanadorFinal (Juego &juego){
     int ganador = 0;
-    int maxPuntos = juego.jugadores[0].puntos;
+    int minPuntos = juego.jugadores[0].puntos; // Buscamos el MÍNIMO
 
     for (int i = 1; i < juego.numJugadores; i++) 
     {
-        if (juego.jugadores[i].puntos > maxPuntos) {
-            maxPuntos = juego.jugadores[i].puntos;
+        if (juego.jugadores[i].puntos < minPuntos) { // Comparamos con <
+            minPuntos = juego.jugadores[i].puntos;
             ganador = i;
         }
     }
@@ -468,37 +468,40 @@ int encontrarGanadorFinal (Juego &juego){
 }
 
 
-// Bucle principal (ronda tras ronda)
-void jugarPartidaCompleta(Juego &juego, Mesa &mesa, int puntajeObjetivo){
-    int numeroRonda = 1;
+// Bucle principal (CAMBIO: ahora son 3 rondas)
+void jugarPartidaCompleta(Juego &juego, Mesa &mesa){
+    int ganadorRondaAnterior = -1; // -1 significa "primera ronda"
     
     std::cout << "\n🎮 ¡COMIENZA LA PARTIDA!" << std::endl;
-    std::cout << "🎯 Objetivo: " << puntajeObjetivo << " puntos" << std::endl;
+    std::cout << "🎯 Se jugarán 3 rondas. ¡El que tenga MENOS puntos al final, gana!" << std::endl;
 
-    while (!hayGanadorFinal(juego, puntajeObjetivo))
+    // Bucle principal: Juega exactamente 3 rondas
+    for (int numeroRonda = 1; numeroRonda <= 3; numeroRonda++)
     {
         std::cout << "\n" << std::string(60, '=') << std::endl;
-        std::cout << "           RONDA " << numeroRonda << std::endl;
+        std::cout << "           RONDA " << numeroRonda << " / 3" << std::endl;
         std::cout << std::string(60, '=') << std::endl;
         
-        iniciarRonda(juego,mesa);
+        // Prepara la ronda (y le dice quién empieza)
+        iniciarRonda(juego, mesa, ganadorRondaAnterior);
 
         std::cout << "\nPRESIONA ENTER para empezar la ronda...";
         std::cin.ignore();
         std::cin.get();
 
-        int ganadorRonda = jugarRonda(juego,mesa);
-        mostrarResumenRonda(juego,numeroRonda, ganadorRonda);
+        // Juega la ronda
+        int ganadorRonda = jugarRonda(juego, mesa);
+        ganadorRondaAnterior = ganadorRonda; // Guarda al ganador para la prox ronda
 
-        if (hayGanadorFinal(juego, puntajeObjetivo))
-        {
-            break; // se acabo
+        // Muestra el resumen
+        mostrarResumenRonda(juego, numeroRonda, ganadorRonda);
+
+        // Si no es la última ronda, pausa
+        if (numeroRonda < 3) {
+            std::cout << "\nPresiona ENTER para continuar a la siguiente ronda...";
+            std::cin.ignore();
+            std::cin.get();
         }
-
-        numeroRonda ++;
-        std::cout << "\nPresiona ENTER para continuar a la siguiente ronda...";
-        std::cin.ignore();
-        std::cin.get();
     }
 
     // --- FIN DE PARTIDA ---
@@ -506,19 +509,19 @@ void jugarPartidaCompleta(Juego &juego, Mesa &mesa, int puntajeObjetivo){
     std::cout << "        🎊 FIN DE LA PARTIDA 🎊" << std::endl;
     std::cout << std::string(60, '=') << std::endl;
 
-    int ganadorFinal = encontrarGanadorFinal(juego);
+    int ganadorFinal = encontrarGanadorFinal(juego); // Busca al de MENOS puntos
 
     std::cout << "\n🏆🏆🏆 ¡GANADOR FINAL: " << juego.jugadores[ganadorFinal].nombre << "! 🏆🏆🏆" << std::endl;
     std::cout << "🌟 Puntuación final: " << juego.jugadores[ganadorFinal].puntos << " puntos" << std::endl;
 
     // Mostrar clasificacion
-    std::cout << "\n📊 CLASIFICACIÓN FINAL:" << std::endl;
+    std::cout << "\n📊 CLASIFICACIÓN FINAL (Menos es mejor):" << std::endl;
     std::cout << std::string(40, '-') << std::endl;
     
-    // burbuja simple para ordenar la clasificacion
+    // burbuja simple para ordenar (CAMBIO: de MENOR a mayor)
     for (int i = 0; i < juego.numJugadores - 1; i++) {
         for (int j = 0; j < juego.numJugadores - i - 1; j++) {
-            if (juego.jugadores[j].puntos < juego.jugadores[j + 1].puntos) {
+            if (juego.jugadores[j].puntos > juego.jugadores[j + 1].puntos) { // Se usa >
                 Jugador temp = juego.jugadores[j];
                 juego.jugadores[j] = juego.jugadores[j + 1];
                 juego.jugadores[j + 1] = temp;
@@ -536,7 +539,7 @@ void jugarPartidaCompleta(Juego &juego, Mesa &mesa, int puntajeObjetivo){
         std::cout << std::endl;
     }
     std::cout << std::string(40, '-') << std::endl;
-    std::cout << "\nTotal de rondas jugadas: " << numeroRonda << std::endl;
+    std::cout << "\nTotal de rondas jugadas: 3" << std::endl;
 }
 
 #endif
